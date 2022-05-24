@@ -2,8 +2,9 @@ import pygame,sys,time
 from pygame.locals import *
 from constants import *
 from random import *
+import strategy
 
-
+AI_MODE = True
 sizeofboard = 4
 totalpoints = 0
 defaultscore = 2
@@ -11,13 +12,17 @@ defaultscore = 2
 pygame.init()
 
 surface = pygame.display.set_mode((400,500),0,32)
-pygame.display.set_caption("2048 Game by DataFlair")
+pygame.display.set_caption("2048 Game")
 
 font = pygame.font.SysFont("monospace",40)
 fontofscore = pygame.font.SysFont("monospace",30)
 
 tileofmatrix = [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]]
 undomatrix = []
+
+_myBot = strategy.myBot()
+
+
 black = (0,0,0)
 red = (255,0,0)
 orange = (255,152,0)
@@ -47,63 +52,9 @@ colordict = {
     2048:brown
 }
 
+
 def getcolor(i):
     return colordict[i]
-def mainfunction(fromLoaded = False):
-    
-    if not fromLoaded:
-        placerandomtile()
-        placerandomtile()
-    printmatrix()
-
-
-    while True:
-        for event in pygame.event.get():
-            if event.type == QUIT:
-                pygame.quit()
-                sys.exit()
-            
-            if checkIfCanGo() == True:
-                if event.type == KEYDOWN:
-                    if isArrow(event.key):
-                        rotations = getrotations(event.key)
-                        addToUndo()
-                        for i in range(0,rotations):
-                            rotatematrixclockwise()
-
-                        if canmove():
-                            movetiles()
-                            mergetiles()
-                            placerandomtile()
-
-                        for j in range(0,(4-rotations)%4):
-                            rotatematrixclockwise()
-                            
-                        printmatrix()
-            else: 
-                gameover()
-
-            if event.type == KEYDOWN:
-                global sizeofboard
-
-                if event.key == pygame.K_r:
-                 
-                    reset()
-                if 50<event.key and 56 > event.key:
-                    
-                    sizeofboard = event.key - 48
-                    reset()
-                if event.key == pygame.K_s:
-                   
-                    savegame()
-                elif event.key == pygame.K_l:
-                    loadgame()
-                    
-                elif event.key == pygame.K_u:
-                    undo()
-                   
-        pygame.display.update()
-
 
 
 def canmove():
@@ -114,6 +65,7 @@ def canmove():
             elif (tileofmatrix[i][j-1] == tileofmatrix[i][j]) and tileofmatrix[i][j-1] != 0:
                 return True
     return False
+
     
 def movetiles():
     for i in range(0,sizeofboard):
@@ -123,8 +75,6 @@ def movetiles():
                 for k in range(j,sizeofboard-1):
                    tileofmatrix[i][k] = tileofmatrix[i][k+1]
                 tileofmatrix[i][sizeofboard-1] = 0
-
-
 
 
 def mergetiles():
@@ -148,23 +98,21 @@ def placerandomtile():
                 c += 1
     
     k = floor(random() * sizeofboard* sizeofboard)
-    print("click")
-
     while tileofmatrix[floor(k/sizeofboard)][k%sizeofboard] != 0:
         k = floor(random() * sizeofboard * sizeofboard)
 
     tileofmatrix[floor(k/sizeofboard)][k%sizeofboard] = 2
 
 
-
-
 def floor(n):
     return int(n - (n % 1 ))  
 
+
 def printmatrix():
-        surface.fill(black)
         global sizeofboard
         global totalpoints
+
+        surface.fill(black)
 
         for i in range(0,sizeofboard):
             for j in range(0,sizeofboard):
@@ -173,7 +121,6 @@ def printmatrix():
                 label2 = fontofscore.render("YourScore:"+str(totalpoints),1,(255,255,255))
                 surface.blit(label,(i*(400/sizeofboard)+30,j*(400/sizeofboard)+130))
                 surface.blit(label2,(10,20))
-
 
 
 def checkIfCanGo():
@@ -191,7 +138,6 @@ def checkIfCanGo():
 
  
 def convertToLinearMatrix():
-
     mat = []
     for i in range(0,sizeofboard ** 2):
         mat.append(tileofmatrix[floor(i/sizeofboard)][i%sizeofboard])
@@ -202,6 +148,7 @@ def convertToLinearMatrix():
 
 def addToUndo():
     undomatrix.append(convertToLinearMatrix())   
+
 
 def rotatematrixclockwise():
     for i in range(0,int(sizeofboard/2)):
@@ -220,15 +167,15 @@ def rotatematrixclockwise():
 def gameover():
     global totalpoints
 
-    surface.fill(black)
+    # surface.fill(black)
 
     label = font.render("gameover",1,(255,255,255))
     label2 =font.render("score : "+str(totalpoints),1,(255,255,255))
-    label3 = font.render("press 'R' to play again",1,(255,255,255))
+    # label3 = font.render("press 'R' to play again",1,(255,255,255))
 
     surface.blit(label,(50,100))
     surface.blit(label2,(50,200))
-    surface.blit(label3,(50,300))
+    # surface.blit(label3,(50,300))
 
 
 def reset():
@@ -240,6 +187,7 @@ def reset():
     tileofmatrix = [[0 for i in range(0,sizeofboard)] for j in range(0,sizeofboard) ]
     mainfunction()
 
+
 def savegame():
     f = open("savedata","w")
 
@@ -247,6 +195,7 @@ def savegame():
     f.write(line1+"\n")
     f.write(str(sizeofboard)+"\n")
     f.write(str(totalpoints))
+
     f.close
 
 
@@ -261,10 +210,11 @@ def undo():
 
         printmatrix()
 
+
 def loadgame():
     global totalpoints
     global sizeofboard
-    global tilematrix
+    global tileofmatrix
 
     f = open("savedata","r")
 
@@ -283,6 +233,7 @@ def loadgame():
 def isArrow(k):
     return (k == pygame.K_UP or k == pygame.K_DOWN or k == pygame.K_LEFT or k == pygame.K_RIGHT)
 
+
 def getrotations(k):
     if k == pygame.K_UP:
         return 0
@@ -293,4 +244,83 @@ def getrotations(k):
     elif k == pygame.K_RIGHT:
         return 3
 
-mainfunction()
+
+def mainfunction(fromLoaded = False):
+    global sizeofboard
+    global AI_MODE
+    
+    if not fromLoaded:
+        placerandomtile()
+        placerandomtile()
+    printmatrix()
+
+
+    while True:
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                pygame.quit()
+                sys.exit()
+            
+            if checkIfCanGo() == True:
+                if AI_MODE:
+                    # AI mode
+                    _myBot.readBoard(tileofmatrix)
+                    rotations = _myBot.playAMove()
+
+                    addToUndo()
+                    for i in range(0,rotations):
+                        rotatematrixclockwise()
+
+                    if canmove():
+                        movetiles()
+                        mergetiles()
+                        placerandomtile()
+                        _myBot.resetMove()
+                    else:
+                        _myBot.changeDirection()
+
+                    for j in range(0,(4-rotations)%4):
+                        rotatematrixclockwise()
+                        
+                    printmatrix()
+                else:
+                    # player mode
+                    if event.type == KEYDOWN:
+                        if isArrow(event.key):
+                            rotations = getrotations(event.key)
+                            addToUndo()
+                            for i in range(0,rotations):
+                                rotatematrixclockwise()
+
+                            if canmove():
+                                movetiles()
+                                mergetiles()
+                                placerandomtile()
+
+                            for j in range(0,(4-rotations)%4):
+                                rotatematrixclockwise()
+                                
+                            printmatrix()
+            else: 
+                gameover()
+
+            if event.type == KEYDOWN:
+                if event.key == pygame.K_r:                 
+                    reset()
+                if 50<event.key and 56 > event.key:                    
+                    sizeofboard = event.key - 48
+                    reset()
+                if event.key == pygame.K_s:
+                    savegame()
+                elif event.key == pygame.K_l:
+                    loadgame()                    
+                elif event.key == pygame.K_u:
+                    undo()
+                elif event.key == pygame.K_p:
+                    AI_MODE = not AI_MODE
+                    print("AI MODE is ", AI_MODE)
+                   
+        pygame.display.update()
+
+if __name__ == "__main__":
+    mainfunction()
